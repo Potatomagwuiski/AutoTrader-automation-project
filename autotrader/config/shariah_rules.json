@@ -1,0 +1,34 @@
+{
+  "standard_name": "AAOIFI Shariah Standard No. 21 (Musaffa Compliant)",
+  "version": "2026.1",
+  "max_debt_to_mcap": 0.3,
+  "max_cash_to_mcap": 0.3,
+  "max_impermissible_revenue": 0.05,
+  "prohibited_sectors": [
+    "Financial Services",
+    "Commercial Banking",
+    "Investment Banking",
+    "Tobacco",
+    "Casinos & Gaming",
+    "Brewers",
+    "Distillers & Vintners",
+    "Defense",
+    "Aerospace & Defense",
+    "Adult Entertainment",
+    "Cannabis"
+  ],
+  "prohibited_keywords": [
+    "interest",
+    "lending",
+    "casino",
+    "gambling",
+    "alcohol",
+    "beer",
+    "wine",
+    "pork",
+    "tobacco",
+    "cigarette",
+    "weapons",
+    "defense contractor"
+  ]
+}

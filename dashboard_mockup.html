@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoTrader AI - 1-Line Status Matte Cockpit</title>
+  <!-- Google Fonts: Space Mono (Exact Typewriter Font) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js for TradingView-style interactive charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"Space Mono"', 'monospace']
+          },
+          colors: {
+            brand: {
+              charcoalBg: '#121316',
+              charcoalCard: '#1C1D21',
+              charcoalBorder: '#28292E',
+              charcoalButton: '#24262B',
+              lime: '#CCFF00',
+              emerald: '#10B981',
+              mint: '#5EEAD4',
+              cyan: '#00F0FF'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #121316;
+      color: #FFFFFF;
+      font-family: 'Space Mono', monospace;
+      -webkit-tap-highlight-color: transparent;
+      letter-spacing: -0.02em;
+    }
+    .charcoal-card {
+      background: #1C1D21;
+      border: 1px solid #28292E;
+      box-shadow: 0 14px 34px -4px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3);
+    }
+    .charcoal-card:active {
+      transform: scale(0.99);
+    }
+    .status-capsule {
+      background: #18191D;
+      border: 1px solid #28292E;
+    }
+    .inner-pill {
+      background: #22242A;
+      border: 1px solid #2F323A;
+    }
+    .floating-pill-nav {
+      background: #16171B;
+      border: 1px solid #28292E;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.8);
+    }
+    .cyan-floor-line {
+      border-top: 1px dashed rgba(0, 240, 255, 0.6);
+    }
+    .modal-backdrop {
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(12px);
+    }
+    ::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body class="min-h-screen flex justify-center bg-[#121316] pb-32 antialiased selection:bg-brand-lime selection:text-black font-mono">
+
+  <!-- Mobile App Frame Container -->
+  <div class="w-full max-w-md min-h-screen flex flex-col px-5 pt-8 relative justify-between">
+
+    <div class="flex flex-col gap-3.5">
+      
+      <!-- 1. TOP HERO BENTO CARD -->
+      <div class="charcoal-card rounded-3xl p-6 flex flex-col gap-3">
+        <!-- Header -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-sm shadow-sm">
+              👤
+            </div>
+            <div class="text-xs text-zinc-300 font-bold">
+              Alpaca Linked
+            </div>
+          </div>
+          <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
+        </div>
+
+        <!-- Hero Balance -->
+        <div class="flex flex-col gap-0.5 mt-1">
+          <div class="text-4xl font-bold tracking-tight text-white">
+            $49,785.35
+          </div>
+          <div class="text-xs font-bold text-teal-400">
+            +895.71% (+$44,785)
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. EXACT 1-LINE STATUS CAPSULE (All 3 in a Single Row) -->
+      <div class="status-capsule rounded-2xl p-2.5 flex items-center justify-between gap-2">
+        <!-- Pill 1: Execution -->
+        <div class="inner-pill flex-1 rounded-xl px-2.5 py-2 flex items-center justify-between text-[10px] font-bold text-zinc-200 shadow-sm cursor-pointer hover:border-zinc-500 transition whitespace-nowrap">
+          <span>Execution</span>
+          <span class="w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)] ml-1"></span>
+        </div>
+
+        <!-- Pill 2: Canary AI -->
+        <div class="inner-pill flex-1 rounded-xl px-2.5 py-2 flex items-center justify-between text-[10px] font-bold text-zinc-200 shadow-sm cursor-pointer hover:border-zinc-500 transition whitespace-nowrap">
+          <span>Canary AI</span>
+          <span class="w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)] ml-1"></span>
+        </div>
+
+        <!-- Pill 3: Shariah -->
+        <div class="inner-pill flex-1 rounded-xl px-2.5 py-2 flex items-center justify-between text-[10px] font-bold text-zinc-200 shadow-sm cursor-pointer hover:border-zinc-500 transition whitespace-nowrap">
+          <span>Shariah</span>
+          <span class="w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)] ml-1"></span>
+        </div>
+      </div>
+
+      <!-- 3. ACTIVE TRADE BENTO CARD 1: AMD -->
+      <div class="charcoal-card rounded-3xl p-5 cursor-pointer hover:border-zinc-700 transition" onclick="openTradeModal('AMD', 'Advanced Micro Devices', '$210.25', '$395.26', '+88.0%', '+$2,195.51', '$355.00 (+68.8% locked)', '$21.95')">
+        <div class="flex justify-between items-start mb-0.5">
+          <span class="text-xl font-bold text-white">AMD</span>
+          <span class="text-xs font-bold text-teal-400 bg-teal-950/60 border border-teal-800/60 px-2 py-0.5 rounded-full">
+            LONG
+          </span>
+        </div>
+        <div class="text-[11px] text-zinc-400">Trade Entry: $210.25</div>
+
+        <!-- Matte Line Chart with Hollow Node Dots -->
+        <div class="h-20 w-full my-1.5">
+          <canvas id="chartAMD"></canvas>
+        </div>
+
+        <!-- Cyan Dotted Protected Floor Line -->
+        <div class="cyan-floor-line pt-2 text-center text-xs mb-1.5">
+          <span class="text-brand-cyan text-[10px] font-bold tracking-tight">
+            Protected Floor: $355.00 (+68.8% Locked)
+          </span>
+        </div>
+
+        <div class="flex justify-between items-center text-xs font-bold pt-1.5 border-t border-zinc-800/80">
+          <span class="text-zinc-400">Current: <strong class="text-white font-bold">$395.26</strong></span>
+          <span class="text-teal-400">P&amp;L: +88.0%</span>
+        </div>
+      </div>
+
+      <!-- 4. ACTIVE TRADE BENTO CARD 2: PLTR -->
+      <div class="charcoal-card rounded-3xl p-5 cursor-pointer hover:border-zinc-700 transition" onclick="openTradeModal('PLTR', 'Palantir Technologies', '$51.14', '$74.14', '+45.0%', '+$952.70', '$67.20 (+31.4% locked)', '$9.53')">
+        <div class="flex justify-between items-start mb-0.5">
+          <span class="text-xl font-bold text-white">PLTR</span>
+          <span class="text-xs font-bold text-teal-400 bg-teal-950/60 border border-teal-800/60 px-2 py-0.5 rounded-full">
+            LONG
+          </span>
+        </div>
+        <div class="text-[11px] text-zinc-400">Trade Entry: $51.14</div>
+
+        <!-- Matte Line Chart with Hollow Node Dots -->
+        <div class="h-20 w-full my-1.5">
+          <canvas id="chartPLTR"></canvas>
+        </div>
+
+        <!-- Cyan Dotted Protected Floor Line -->
+        <div class="cyan-floor-line pt-2 text-center text-xs mb-1.5">
+          <span class="text-brand-cyan text-[10px] font-bold tracking-tight">
+            Protected Floor: $67.20 (+31.4% Locked)
+          </span>
+        </div>
+
+        <div class="flex justify-between items-center text-xs font-bold pt-1.5 border-t border-zinc-800/80">
+          <span class="text-zinc-400">Current: <strong class="text-white font-bold">$74.14</strong></span>
+          <span class="text-teal-400">P&amp;L: +45.0%</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 5. FLOATING PILL NAVIGATION BAR -->
+    <div class="fixed bottom-7 left-1/2 -translate-x-1/2 floating-pill-nav rounded-full px-6 py-2.5 flex items-center gap-7 z-40">
+      
+      <!-- Dashboard -->
+      <button class="flex flex-col items-center gap-0.5 text-white transition">
+        <i data-lucide="layout-grid" class="w-4 h-4"></i>
+        <span class="text-[8px] font-bold text-white">Dashboard</span>
+      </button>
+
+      <!-- Positions -->
+      <button onclick="showSheet('history')" class="flex flex-col items-center gap-0.5 text-zinc-500 hover:text-white transition">
+        <i data-lucide="briefcase" class="w-4 h-4"></i>
+        <span class="text-[8px] font-bold text-zinc-500">Positions</span>
+      </button>
+
+      <!-- Logs -->
+      <button onclick="showSheet('brain')" class="flex flex-col items-center gap-0.5 text-zinc-500 hover:text-white transition">
+        <i data-lucide="list" class="w-4 h-4"></i>
+        <span class="text-[8px] font-bold text-zinc-500">Logs</span>
+      </button>
+
+      <!-- Account -->
+      <button onclick="showSheet('settings')" class="flex flex-col items-center gap-0.5 text-zinc-500 hover:text-white transition">
+        <i data-lucide="user" class="w-4 h-4"></i>
+        <span class="text-[8px] font-bold text-zinc-500">Account</span>
+      </button>
+
+    </div>
+
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- TRADE DETAILS MODAL -->
+  <!-- ============================================================ -->
+  <div id="tradeModal" class="fixed inset-0 modal-backdrop z-50 hidden flex items-end justify-center font-mono">
+    <div class="w-full max-w-md bg-[#1C1D21] border-t border-zinc-700 rounded-t-[32px] p-7 shadow-2xl flex flex-col gap-4 animate-slide-up">
+      <div class="flex justify-between items-start">
+        <div>
+          <div id="modalSymbol" class="text-3xl font-bold text-white">AMD</div>
+          <div id="modalCompanyName" class="text-xs text-zinc-400">Advanced Micro Devices</div>
+        </div>
+        <button onclick="closeModal('tradeModal')" class="w-9 h-9 rounded-full bg-zinc-800 text-zinc-400 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="flex flex-col gap-3 text-sm text-zinc-300">
+        <div class="flex justify-between py-2 border-b border-zinc-800">
+          <span class="text-zinc-400">Entry Price:</span>
+          <span id="modalEntry" class="font-bold text-white">$210.25</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-zinc-800">
+          <span class="text-zinc-400">Market Price:</span>
+          <span id="modalCurrent" class="font-bold text-white">$395.26</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-zinc-800">
+          <span class="text-zinc-400">Total Profit:</span>
+          <span id="modalGain" class="font-bold text-teal-400">+$2,195.51 (+88.0%)</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-zinc-800">
+          <span class="text-zinc-400">Chandelier Stop:</span>
+          <span id="modalStop" class="font-bold text-brand-cyan">$355.00 (+68.8% locked)</span>
+        </div>
+        <div class="flex justify-between py-2">
+          <span class="text-zinc-400">Purified (1%):</span>
+          <span id="modalPurify" class="font-bold text-teal-400">$21.95</span>
+        </div>
+      </div>
+
+      <button onclick="closeModal('tradeModal')" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm py-4 rounded-2xl transition">
+        Done
+      </button>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    function openTradeModal(sym, comp, entry, curr, gainPct, gainDol, stop, purify) {
+      document.getElementById('modalSymbol').innerText = sym;
+      document.getElementById('modalCompanyName').innerText = comp;
+      document.getElementById('modalEntry').innerText = entry;
+      document.getElementById('modalCurrent').innerText = curr;
+      document.getElementById('modalGain').innerText = gainDol + ' (' + gainPct + ')';
+      document.getElementById('modalStop').innerText = stop;
+      document.getElementById('modalPurify').innerText = purify;
+      
+      document.getElementById('tradeModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add('hidden');
+    }
+
+    function renderCharts() {
+      // AMD Line with hollow circular node dots
+      const ctxAMD = document.getElementById('chartAMD').getContext('2d');
+      new Chart(ctxAMD, {
+        type: 'line',
+        data: {
+          labels: [1,2,3,4,5,6,7,8,9,10,11],
+          datasets: [{
+            data: [210, 235, 225, 270, 260, 240, 290, 320, 310, 350, 395],
+            borderColor: 'rgba(255, 255, 255, 0.4)',
+            borderWidth: 1.5,
+            pointBackgroundColor: '#1C1D21',
+            pointBorderColor: '#FFFFFF',
+            pointBorderWidth: 2,
+            pointRadius: 3.5,
+            tension: 0.1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { display: false }, y: { display: false } }
+        }
+      });
+
+      // PLTR Line with hollow circular node dots
+      const ctxPLTR = document.getElementById('chartPLTR').getContext('2d');
+      new Chart(ctxPLTR, {
+        type: 'line',
+        data: {
+          labels: [1,2,3,4,5,6,7,8,9,10,11],
+          datasets: [{
+            data: [51, 54, 52, 58, 56, 61, 63, 62, 68, 71, 74],
+            borderColor: 'rgba(255, 255, 255, 0.4)',
+            borderWidth: 1.5,
+            pointBackgroundColor: '#1C1D21',
+            pointBorderColor: '#FFFFFF',
+            pointBorderWidth: 2,
+            pointRadius: 3.5,
+            tension: 0.1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { display: false }, y: { display: false } }
+        }
+      });
+    }
+
+    window.onload = renderCharts;
+  </script>
+</body>
+</html>
