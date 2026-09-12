@@ -64,7 +64,14 @@ class DashboardViewModel extends ChangeNotifier {
     });
 
     _positionsSub = _telemetryService.positionsStream.listen((newPositions) {
+      final bool changed = _positions.length != newPositions.length ||
+          !_positions.every((p) => newPositions.any((np) => np.symbol == p.symbol));
       _positions = newPositions;
+      if (changed) {
+        _geminiGeneratedBriefing = null;
+        geminiService?.clearCachedCardResult('Executive Briefing');
+        unawaited(_regenerateBriefingIfGeminiAvailable(force: true));
+      }
       notifyListeners();
     });
 
@@ -162,7 +169,7 @@ class DashboardViewModel extends ChangeNotifier {
         _lastBriefingGeneratedAt = DateTime.now();
         geminiService?.setCachedCardResult('Executive Briefing', result);
       } else if (geminiService != null) {
-        if (_geminiGeneratedBriefing == null || _geminiGeneratedBriefing!.isEmpty) {
+        if (force || _geminiGeneratedBriefing == null || _geminiGeneratedBriefing!.isEmpty) {
           final fallback = geminiService!.askCompanionLocally(
             'Executive Briefing',
             _state,
@@ -392,9 +399,12 @@ class DashboardViewModel extends ChangeNotifier {
     notifyListeners();
     try {
       await LiveBotService().triggerUniverseScan();
+      final posStatus = _positions.isNotEmpty
+          ? 'Holding ${_positions.first.symbol} (${_positions.first.shares} shs) with trailing floor stop active'
+          : '100% Cash Preserved in Standby';
       BotNotificationService().addNotification(
         title: '📡 Universe Breakout Radar Active',
-        body: 'Scanned AAOIFI universe. Top conviction setups: CRWD (\$230.90), MRVL (\$256.60), SNOW (\$337.50), PLTR (\$189.90). 100% Cash Preserved in Standby.',
+        body: 'Scanned AAOIFI universe. Top conviction setups: CRWD (\$230.90), MRVL (\$256.60), SNOW (\$337.50), PLTR (\$189.90). $posStatus.',
         category: NotificationCategory.canaryAi,
         showNativePush: true,
       );
@@ -432,7 +442,30 @@ class DashboardViewModel extends ChangeNotifier {
 
   String get executiveBriefingSummary {
     if (_geminiGeneratedBriefing != null && _geminiGeneratedBriefing!.trim().isNotEmpty) {
-      return _geminiGeneratedBriefing!;
+      final briefing = _geminiGeneratedBriefing!;
+      final mentions100Cash = briefing.contains('100% of our') ||
+          briefing.contains('preserved in cash') ||
+          briefing.contains('100% in cash') ||
+          briefing.contains('cash standby') ||
+          briefing.contains('cash defense');
+      final hasActivePositions = _positions.isNotEmpty;
+
+      // Sanity check: If we have active positions, but briefing claims 100% cash defense or doesn't mention active symbol:
+      if (hasActivePositions) {
+        final activeSymbol = _positions.first.symbol;
+        if (mentions100Cash || !briefing.contains(activeSymbol)) {
+          _geminiGeneratedBriefing = null;
+        } else {
+          return briefing;
+        }
+      } else {
+        // If we have NO active positions, but briefing mentions holding positions:
+        if (briefing.contains('Holding') || briefing.contains('holding') || briefing.contains('shares of')) {
+          _geminiGeneratedBriefing = null;
+        } else {
+          return briefing;
+        }
+      }
     }
 
     final activeCount = _positions.length;
@@ -470,7 +503,8 @@ class DashboardViewModel extends ChangeNotifier {
     } else if (activeCount == 1) {
       final p = _positions[0];
       final sign = p.unrealizedGainPercent >= 0 ? '+' : '';
-      return '$greeting, Boss. You are back in the cockpit. Holding ${p.shares} shares of ${p.symbol} at \$${p.livePrice.toStringAsFixed(2)} ($sign${p.unrealizedGainPercent.toStringAsFixed(1)}%). Trailing floor stop is active at \$${p.protectedFloor.toStringAsFixed(2)} with strict risk parameters enforced.';
+      final dollarSign = p.unrealizedProfitDollars >= 0 ? '+' : '-';
+      return '$greeting, Boss. You are back in the cockpit. Holding ${p.shares} shares of ${p.symbol} at \$${p.livePrice.toStringAsFixed(2)} ($sign${p.unrealizedGainPercent.toStringAsFixed(1)}%, $dollarSign\$${p.unrealizedProfitDollars.abs().toStringAsFixed(2)}). Trailing floor stop is active at \$${p.protectedFloor.toStringAsFixed(2)} with strict risk parameters enforced. On radar, $topSymbol is our #1 setup ($topScore% win score).';
     } else {
       final hasDrawdown = _state.totalGainDollars < -1.0;
       final cashStatus = hasDrawdown

@@ -274,18 +274,12 @@ class _NotificationsSheetState extends State<NotificationsSheet> {
                   child: GestureDetector(
                     onTap: () async {
                       AppHaptics.successNotification();
-                      await notifService.requestPermissions();
-                      await notifService.addNotification(
-                        title: '⚡ Trading Cockpit: Limit Order Filled',
-                        body: 'Executed 8 shares of CRWD at \$218.40. Trailing stop armed at \$207.50 (+100% Cash Protected).',
-                        category: NotificationCategory.execution,
-                        showNativePush: true,
-                      );
+                      await notifService.sendTestNotification();
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              '🔔 Live push notification sent to your phone! Lock your phone or check your notification shade.',
+                              '🔔 Native push alert sent! Notification banner is active.',
                               style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textWhite),
                             ),
                             backgroundColor: AppTheme.charcoalCard,

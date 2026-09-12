@@ -520,6 +520,25 @@ class BotTelemetryService {
           for (final d in _botDecisions) {
             final key = '${d.timestamp}_${d.title}_${d.assetSymbol}';
             _notifiedDecisionKeys.add(key);
+            final isTrade = d.category.toUpperCase().contains('EXEC') ||
+                d.title.toUpperCase().contains('FILL') ||
+                d.title.toUpperCase().contains('ORDER') ||
+                d.title.toUpperCase().contains('BUY') ||
+                d.title.toUpperCase().contains('SELL');
+            if (isTrade) {
+              final notifExists = BotNotificationService().notifications.any(
+                (n) => n.title.contains(d.assetSymbol) && n.title.contains(d.title),
+              );
+              if (!notifExists) {
+                final prefix = d.impactBadge.isNotEmpty ? '[${d.impactBadge}] ' : '';
+                BotNotificationService().addNotification(
+                  title: '⚡ ${d.assetSymbol}: $prefix${d.title}',
+                  body: d.detail,
+                  category: NotificationCategory.execution,
+                  showNativePush: false,
+                );
+              }
+            }
           }
           isInitialSnapshot = false;
         }

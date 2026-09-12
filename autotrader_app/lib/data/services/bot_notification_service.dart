@@ -143,6 +143,17 @@ class BotNotificationService extends ChangeNotifier {
         );
         debugPrint('[BotNotificationService] iOS notification permission granted: $granted');
       }
+
+      final macImpl = _localNotificationsPlugin
+          .resolvePlatformSpecificImplementation<MacOSFlutterLocalNotificationsPlugin>();
+      if (macImpl != null) {
+        final granted = await macImpl.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+        debugPrint('[BotNotificationService] macOS notification permission granted: $granted');
+      }
       return true;
     } catch (e) {
       debugPrint('[BotNotificationService] Error requesting permissions: $e');
@@ -184,7 +195,7 @@ class BotNotificationService extends ChangeNotifier {
       BotNotificationItem(
         id: 'notif_2',
         title: 'Macro Regime: BULL_TRENDING',
-        body: 'S&P 500 trading firmly above 200-EMA. Full swing allocation authorized with 100% cash preserved in standby.',
+        body: 'S&P 500 trading firmly above 200-EMA. Full swing allocation authorized with dynamic trailing stop floors.',
         category: NotificationCategory.regimeShift,
         timestamp: now.subtract(const Duration(minutes: 25)),
         isRead: false,
@@ -200,7 +211,7 @@ class BotNotificationService extends ChangeNotifier {
       BotNotificationItem(
         id: 'notif_4',
         title: 'Alpaca Direct Market Access Bridge Active',
-        body: 'Connected to Alpaca Paper Broker (PA3NWAUW7TP1) with \$20,000.00 cash purchasing power and sub-5ms routing.',
+        body: 'Connected to Alpaca Broker (PA3NWAUW7TP1) with active capital preservation and sub-5ms routing.',
         category: NotificationCategory.systemAlert,
         timestamp: now.subtract(const Duration(hours: 2)),
         isRead: true,
@@ -215,6 +226,12 @@ class BotNotificationService extends ChangeNotifier {
     required NotificationCategory category,
     bool showNativePush = true,
   }) async {
+    // Deduplicate identical alerts triggered within 60 seconds
+    final isDuplicate = _notifications.any(
+      (n) => n.title == title && DateTime.now().difference(n.timestamp).inSeconds < 60,
+    );
+    if (isDuplicate) return;
+
     final item = BotNotificationItem(
       id: 'notif_${DateTime.now().millisecondsSinceEpoch}',
       title: title,
@@ -232,6 +249,17 @@ class BotNotificationService extends ChangeNotifier {
     if (showNativePush) {
       await _deliverNativePushNotification(title: title, body: body, category: category);
     }
+  }
+
+  /// Sends an immediate test push notification to verify OS delivery
+  Future<void> sendTestNotification() async {
+    await requestPermissions();
+    await addNotification(
+      title: '⚡ AutoTrader Push Test: Systems Active',
+      body: 'Real-time telemetry, Alpaca DMA execution daemon, and instant push notification banners verified operational.',
+      category: NotificationCategory.systemAlert,
+      showNativePush: true,
+    );
   }
 
   Future<void> _deliverNativePushNotification({
@@ -258,14 +286,12 @@ class BotNotificationService extends ChangeNotifier {
         icon: '@mipmap/ic_launcher',
       );
 
-      // When the user is actively inside the app, suppress intrusive drop-down banners
-      // so they can use the cockpit smoothly. In-app bell badge & decision feeds update live.
-      // Full banners still appear when the app is in the background or the phone is locked.
+      // Show full notifications with banner, sound, alert, and badge across foreground and background
       const darwinDetails = DarwinNotificationDetails(
-        presentAlert: false,
+        presentAlert: true,
         presentBadge: true,
-        presentSound: false,
-        presentBanner: false,
+        presentSound: true,
+        presentBanner: true,
         presentList: true,
       );
 

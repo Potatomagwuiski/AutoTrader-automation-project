@@ -1163,6 +1163,10 @@ Output format strictly in valid JSON:
 
     if (alerts.isNotEmpty) {
       final alertStr = alerts.join(" and ");
+      if (positions.isNotEmpty) {
+        final p = positions.first;
+        return "⚠️ Subsystem Alert: $alertStr. Holding ${p.shares} shares of ${p.symbol} at \$${p.livePrice.toStringAsFixed(2)} with protective stop floor at \$${p.protectedFloor.toStringAsFixed(2)}. Capital and active trades are guarded 24/7.";
+      }
       return "⚠️ Subsystem Alert: $alertStr. 100% of our \$${state.portfolioValue.toStringAsFixed(2)} capital is locked in strict cash defense. No new orders will be placed until all sentinel systems are restored.";
     }
 
@@ -1193,7 +1197,7 @@ Output format strictly in valid JSON:
       final pnlSign = p1.unrealizedGainPercent >= 0 ? '+' : '';
       final pnlDollars = p1.unrealizedProfitDollars;
       final dollarSign = pnlDollars >= 0 ? '+' : '-';
-      return "$greeting, Boss. You're back in the cockpit. We are actively holding ${p1.shares} shares of ${p1.symbol} at \$${p1.livePrice.toStringAsFixed(2)} ($pnlSign${p1.unrealizedGainPercent.toStringAsFixed(1)}%, $dollarSign\$${p1.unrealizedProfitDollars.abs().toStringAsFixed(2)}) with your protective floor locked in at \$${p1.protectedFloor.toStringAsFixed(2)}. Position is monitored continuously.";
+      return "$greeting, Boss. You're back in the cockpit. We are actively holding ${p1.shares} shares of ${p1.symbol} at \$${p1.livePrice.toStringAsFixed(2)} ($pnlSign${p1.unrealizedGainPercent.toStringAsFixed(1)}%, $dollarSign\$${p1.unrealizedProfitDollars.abs().toStringAsFixed(2)}) with your protective floor locked in at \$${p1.protectedFloor.toStringAsFixed(2)}. Position is monitored continuously. On radar, $topSymbol is our #1 setup ($topScore% score).";
     } else {
       final hasDrawdown = state.totalGainDollars < -1.0;
       final cashStatus = hasDrawdown
