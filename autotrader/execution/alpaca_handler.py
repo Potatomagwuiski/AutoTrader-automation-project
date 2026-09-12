@@ -72,16 +72,24 @@ class AlpacaExecutionHandler(BaseExecutionHandler):
                 positions = {}
                 for pos_data in resp.json():
                     sym = pos_data.get("symbol", "")
+                    side = pos_data.get("side", "long").upper()
+                    entry_p = float(pos_data.get("avg_entry_price", 0.0))
+                    curr_p = float(pos_data.get("current_price", 0.0))
+                    qty = float(pos_data.get("qty", 0.0))
+                    unrealized = float(pos_data.get("unrealized_pl", 0.0))
                     positions[sym] = Position(
                         symbol=sym,
-                        shares=float(pos_data.get("qty", 0)),
-                        entry_price=float(pos_data.get("avg_entry_price", 0)),
-                        current_price=float(pos_data.get("current_price", 0)),
-                        highest_price=float(pos_data.get("current_price", 0)),
-                        stop_price=0.0,
-                        opened_at=datetime.now(),
+                        direction="LONG" if side == "LONG" else "SHORT",
+                        shares=qty,
+                        entry_price=entry_p,
+                        current_price=curr_p,
+                        entry_time=datetime.now(),
+                        initial_stop_loss=round(entry_p * 0.98, 2),
+                        current_stop_loss=round(entry_p * 0.98, 2),
+                        take_profit=round(entry_p * 1.05, 2),
                         strategy_name="alpaca_live",
-                        metadata={"side": pos_data.get("side", "long")},
+                        highest_price=max(entry_p, curr_p),
+                        unrealized_pnl=unrealized
                     )
                 return positions
         except Exception as e:

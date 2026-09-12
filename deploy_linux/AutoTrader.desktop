@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=AutoTrader AI
+Comment=Autonomous AI Trading Bot Engine & Real-Time Cockpit
+Exec=bash -c "$(dirname "%k")/autotrader_linux_run.sh"
+Icon=utilities-terminal
+Terminal=true
+Categories=Finance;Utility;Development;
+StartupNotify=true

@@ -33,16 +33,16 @@ class Fill(BaseModel):
 
 class Position(BaseModel):
     symbol: str
-    direction: Literal["LONG", "SHORT"]
+    direction: Literal["LONG", "SHORT"] = "LONG"
     shares: float
     entry_price: float
     current_price: float
-    entry_time: datetime
-    initial_stop_loss: float
-    current_stop_loss: float
-    take_profit: float
-    strategy_name: str
-    highest_price: float
+    entry_time: datetime = Field(default_factory=datetime.now)
+    initial_stop_loss: float = 0.0
+    current_stop_loss: float = 0.0
+    take_profit: float = 0.0
+    strategy_name: str = "alpaca_live"
+    highest_price: float = 0.0
     unrealized_pnl: float = 0.0
     realized_pnl: float = 0.0
 

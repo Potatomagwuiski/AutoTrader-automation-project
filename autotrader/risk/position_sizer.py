@@ -68,9 +68,6 @@ class PositionSizer:
         alloc_pct = max_position_notional_pct if max_position_notional_pct is not None else tier.allocation_pct_per_trade
         max_notional = account_equity * alloc_pct
         shares_by_notional = int(max_notional / entry_price)
-
-        if max_position_notional_pct is None and self.max_risk_pct < 0.05:
-            return shares_by_risk
-
+        # Must never exceed either the risk budget (1% equity) OR the notional allocation (48.5% equity)
         final_shares = min(shares_by_risk, shares_by_notional)
         return max(0, final_shares)

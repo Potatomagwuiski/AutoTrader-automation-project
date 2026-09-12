@@ -1,0 +1,39 @@
+================================================================================
+  🤖 AUTOTRADER AI — ZERO-CLICK LINUX EXECUTABLE WITH NGROK 24/7 TUNNEL
+================================================================================
+
+HOW TO RUN:
+-----------
+1. Copy 'autotrader_linux_run.sh' to your Linux computer.
+2. Open terminal in that folder and run:
+
+      chmod +x autotrader_linux_run.sh
+      ./autotrader_linux_run.sh
+
+That's it! Everything installs, configures, and starts automatically.
+
+
+OPTIONAL: ACTIVATE PERMANENT NGROK GLOBAL ACCESS (60 Seconds)
+-------------------------------------------------------------
+If you want to connect your phone globally from outside your home:
+
+1. Create a free account on https://dashboard.ngrok.com
+2. Copy your "Authtoken" from the Ngrok dashboard and run:
+      ngrok config add-authtoken <YOUR_AUTHTOKEN>
+
+3. Claim your free static domain (e.g., autotrader-xyz.ngrok-free.app) and run:
+      ngrok http --domain=<YOUR_DOMAIN> 8000
+
+4. Type your URL (e.g. https://autotrader-xyz.ngrok-free.app) into the
+   AutoTrader Phone App Settings and tap "Connect Global Engine".
+
+Done! The connection never changes or expires.
+
+
+CONTROL COMMANDS:
+-----------------
+• Live Logs:     journalctl -u autotrader -f
+• Restart Bot:   sudo systemctl restart autotrader
+• Stop Bot:      sudo systemctl stop autotrader
+• Check Status:  sudo systemctl status autotrader
+================================================================================

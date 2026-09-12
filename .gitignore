@@ -14,8 +14,9 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
+!autotrader_app/lib/
 parts/
 sdist/
 var/
@@ -63,3 +64,12 @@ autotrader_app/.flutter-plugins-dependencies
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# IDE
+.idea/
+*.iml
+
+# Deployment archives
+autotrader_linux.tar.gz
+autotrader_linux.zip
+deploy_digitalocean_installer.sh
