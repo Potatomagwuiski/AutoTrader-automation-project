@@ -116,10 +116,11 @@ def fetch_live_potential_setups(force_refresh: bool = False) -> List[dict]:
             current_vol = float(df["volume"].iloc[-1])
             rvol = round(current_vol / vol_20, 2) if vol_20 > 0 else 1.5
 
-            # Breakout Entry strictly above current price and Stop Loss below
-            recent_high = float(df["high"].tail(10).max())
-            suggested_entry = round(max(recent_high * 1.008, current_close * 1.018), 2)
-            suggested_stop = round(current_close * 0.95, 2)
+            # Breakout Entry strictly above current price (1.0% to 2.5% breakout) and Stop Loss below (2% risk floor)
+            recent_high = float(df["high"].tail(3).max())
+            raw_entry = max(recent_high * 1.004, current_close * 1.008)
+            suggested_entry = round(min(raw_entry, current_close * 1.025), 2)
+            suggested_stop = round(current_close * 0.98, 2)
 
             # Recent price nodes (last 10 closes)
             recent_nodes = [round(float(p), 2) for p in df["close"].tail(10).tolist()]
