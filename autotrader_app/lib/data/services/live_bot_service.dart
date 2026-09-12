@@ -77,22 +77,18 @@ class LiveBotService {
   }
 
   Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedUrl = prefs.getString(serverPrefKey);
-
-    // If local Mac engine is active on 127.0.0.1:8000, prioritize it for simulator/local testing
-    // unless the user explicitly saved a custom remote URL different from the default
-    if (savedUrl == null || savedUrl == defaultGlobalUrl) {
-      final isLocalActive = await _testCandidate('http://127.0.0.1:8000');
-      if (isLocalActive) {
-        if (kDebugMode) {
-          print('[LiveBotService] Auto-connected to local dev engine: http://127.0.0.1:8000');
-        }
-        await _applyDiscoveredUrl('http://127.0.0.1:8000');
-        return;
+    // 1. Proactively check local dev engine (127.0.0.1:8000) for simulator / local testing
+    final isLocalActive = await _testCandidate('http://127.0.0.1:8000');
+    if (isLocalActive) {
+      if (kDebugMode) {
+        print('[LiveBotService] Auto-connected to local dev engine: http://127.0.0.1:8000');
       }
+      await _applyDiscoveredUrl('http://127.0.0.1:8000');
+      return;
     }
 
+    final prefs = await SharedPreferences.getInstance();
+    final savedUrl = prefs.getString(serverPrefKey);
     final activeUrl = savedUrl ?? defaultGlobalUrl;
     configureServerUrl(activeUrl);
 
@@ -128,13 +124,10 @@ class LiveBotService {
             final dg = socket.receive();
             if (dg != null) {
               try {
-                final text = utf8.decode(dg.data);
-                final json = jsonDecode(text);
-                if (json['service'] == 'autotrader') {
-                  final ip = dg.address.address;
-                  final port = json['port'] ?? 8000;
-                  final target = 'http://$ip:$port';
-                  if (!completer.isCompleted) completer.complete(target);
+                final msg = utf8.decode(dg.data).trim();
+                if (msg.startsWith('AUTOTRADER_SERVER:')) {
+                  final candidate = msg.replaceFirst('AUTOTRADER_SERVER:', '').trim();
+                  if (!completer.isCompleted) completer.complete(candidate);
                 }
               } catch (_) {}
             }
@@ -142,16 +135,19 @@ class LiveBotService {
         });
 
         final foundUdp = await completer.future.timeout(
-          const Duration(milliseconds: 600),
+          const Duration(milliseconds: 300),
           onTimeout: () => null,
         );
         await sub.cancel();
         socket.close();
 
         if (foundUdp != null) {
-          if (kDebugMode) print('[LiveBotService] Auto-discovered via UDP: $foundUdp');
-          await _applyDiscoveredUrl(foundUdp);
-          return foundUdp;
+          final ok = await _testCandidate(foundUdp);
+          if (ok) {
+            if (kDebugMode) print('[LiveBotService] Auto-discovered via UDP: $foundUdp');
+            await _applyDiscoveredUrl(foundUdp);
+            return foundUdp;
+          }
         }
       } catch (e) {
         if (kDebugMode) print('[LiveBotService] UDP discovery error: $e');
@@ -191,9 +187,16 @@ class LiveBotService {
       final res = await http.get(
         Uri.parse('$url/api/health'),
         headers: standardHeaders,
-      ).timeout(const Duration(milliseconds: 500));
-      return res.statusCode == 200;
-    } catch (_) {
+      ).timeout(const Duration(seconds: 4));
+      final ok = res.statusCode == 200;
+      if (kDebugMode) {
+        print('[LiveBotService] Probed $url -> status: ${res.statusCode} (ok: $ok)');
+      }
+      return ok;
+    } catch (e) {
+      if (kDebugMode) {
+        print('[LiveBotService] Probed $url -> error: $e');
+      }
       return false;
     }
   }

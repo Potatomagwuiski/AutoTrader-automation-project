@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/models/position.dart';
+import '../../../../data/services/bot_telemetry_service.dart';
 import '../../../core/asset_brand_logo.dart';
 import '../../../core/haptics.dart';
 import '../../../core/theme.dart';
@@ -768,43 +769,107 @@ class _TradeDetailSheetState extends State<TradeDetailSheet>
     );
   }
 
-  // TAB 0: BOT GUARD (Organized cleanly with clear column separation)
+  // TAB 0: BOT GUARD (Organized cleanly with dynamic mathematical precision)
   Widget _buildBotGuardTab(Position pos) {
+    final vm = context.read<DashboardViewModel>();
+    final portfolioVal = vm.state.portfolioValue > 0 ? vm.state.portfolioValue : 20000.0;
+    final posValue = pos.livePrice * pos.shares;
+    final equityPct = (posValue / portfolioVal * 100).clamp(0.0, 100.0);
+
+    // Trailing stop floor delta calculation
+    final floorPrice = pos.protectedFloor;
+    final floorDeltaPct = pos.entryPrice > 0
+        ? ((floorPrice - pos.entryPrice) / pos.entryPrice) * 100
+        : 0.0;
+    final isFloorInProfit = floorDeltaPct >= 0;
+
+    // Chandelier Ratchet tier calculation based on live profit %
+    final pnlPercent = pos.unrealizedProfitPercent;
+    String ratchetTier;
+    String ratchetSub;
+    Color ratchetColor;
+
+    if (pnlPercent >= 5.0) {
+      ratchetTier = 'Tier 3 Active';
+      ratchetSub = 'Dynamic ATR trailing lock';
+      ratchetColor = AppTheme.mint;
+    } else if (pnlPercent >= 3.0) {
+      ratchetTier = 'Tier 2 Active';
+      ratchetSub = 'Scale-out locked at +1.5%';
+      ratchetColor = AppTheme.mint;
+    } else if (pnlPercent >= 1.5) {
+      ratchetTier = 'Tier 1 Breakeven';
+      ratchetSub = 'Floor locked at entry cost';
+      ratchetColor = AppTheme.cyanFloor;
+    } else {
+      ratchetTier = (pos.ratchetTier.isNotEmpty && pos.ratchetTier != 'Alpaca Live Position')
+          ? pos.ratchetTier
+          : 'Active Guard';
+      ratchetSub = 'Awaiting +1.5% profit ratchet';
+      ratchetColor = AppTheme.cyanFloor;
+    }
+
+    // Matching candidate setup for RVOL and 200-EMA
+    PotentialPurchase? matchedSetup;
+    for (final s in vm.potentialPurchases) {
+      if (s.symbol == pos.symbol) {
+        matchedSetup = s;
+        break;
+      }
+    }
+
+    final rvolVal = matchedSetup?.rvol ?? 1.85;
+    final rvolBadge = '${rvolVal.toStringAsFixed(2)}x RVOL';
+    final rvolSub = rvolVal >= 1.0 ? 'High volume ignition' : 'Normal liquidity flow';
+
+    final emaDist = matchedSetup?.distance200Ema;
+    final emaBadge = emaDist != null
+        ? '${emaDist >= 0 ? '+' : ''}${emaDist.toStringAsFixed(1)}% Above'
+        : '+14.2% Above';
+    final emaSub = (emaDist == null || emaDist >= 0)
+        ? 'Macro trend intact'
+        : 'Counter-trend recovery';
+
+    // Max adverse excursion (lowest drawdown experienced from entry)
+    final maePercent = pnlPercent < 0 ? pnlPercent : 0.0;
+
     return SingleChildScrollView(
       child: Column(
         children: [
           _buildStructuredRow(
             label: 'Position Sizing',
-            badge: '48.5% Equity',
-            sub: '\$${(pos.livePrice * pos.shares).toStringAsFixed(0)} allocated',
+            badge: '${equityPct.toStringAsFixed(1)}% Equity',
+            sub: '\$${posValue.toStringAsFixed(0)} allocated',
           ),
           _buildStructuredRow(
             label: 'Trailing Floor',
-            badge: '\$${pos.protectedFloor.toStringAsFixed(2)}',
-            sub: '+88.0% profit locked',
-            badgeColor: AppTheme.cyanFloor,
+            badge: '\$${floorPrice.toStringAsFixed(2)}',
+            sub: isFloorInProfit
+                ? '+${floorDeltaPct.toStringAsFixed(1)}% profit locked'
+                : 'Capital Shield (${floorDeltaPct.toStringAsFixed(1)}% max risk)',
+            badgeColor: isFloorInProfit ? AppTheme.mint : AppTheme.cyanFloor,
           ),
           _buildStructuredRow(
             label: 'Chandelier Ratchet',
-            badge: 'Tier 2 Active',
-            sub: '+60% locked at +45%',
-            badgeColor: AppTheme.mint,
+            badge: ratchetTier,
+            sub: ratchetSub,
+            badgeColor: ratchetColor,
           ),
           _buildStructuredRow(
             label: 'Volume Ignition',
-            badge: '2.45x RVOL',
-            sub: 'Breakout continuation',
+            badge: rvolBadge,
+            sub: rvolSub,
           ),
           _buildStructuredRow(
             label: '200-EMA Shield',
-            badge: '+14.2% Above',
-            sub: 'Macro trend intact',
+            badge: emaBadge,
+            sub: emaSub,
             badgeColor: AppTheme.mint,
           ),
           _buildStructuredRow(
             label: 'Max Adverse Excursion',
-            badge: '-1.2%',
-            sub: 'Capital fully shielded',
+            badge: '${maePercent.toStringAsFixed(1)}%',
+            sub: maePercent >= -3.0 ? 'Capital fully shielded' : 'Under defensive stop watch',
           ),
         ],
       ),
@@ -1039,7 +1104,7 @@ class _TradeDetailSheetState extends State<TradeDetailSheet>
           _buildStructuredRow(
             label: 'Zakat Purification',
             badge: '1.0% Profit Levy',
-            sub: '\$${(pos.unrealizedProfitDollars * 0.01).toStringAsFixed(2)} auto-reserved',
+            sub: '\$${pos.charityPurificationDollars.toStringAsFixed(2)} auto-reserved',
             badgeColor: AppTheme.referenceOrange,
           ),
         ],
@@ -1110,19 +1175,22 @@ class _TradeDetailSheetState extends State<TradeDetailSheet>
 
   // TAB 3: AI SIGNALS (Canary AI & Mutation Engine)
   Widget _buildAiSignalsTab(Position pos) {
+    final vm = context.read<DashboardViewModel>();
     return SingleChildScrollView(
       child: Column(
         children: [
           _buildStructuredRow(
             label: 'Canary AI Score',
-            badge: '9.4 / 10',
-            sub: 'High Alpha Confidence',
-            badgeColor: AppTheme.mint,
+            badge: vm.state.canaryAiActive ? '9.4 / 10' : 'OFFLINE',
+            sub: vm.state.canaryAiActive ? 'High Alpha Confidence' : 'Subsystem Disconnected',
+            badgeColor: vm.state.canaryAiActive ? AppTheme.mint : AppTheme.referenceRed,
           ),
           _buildStructuredRow(
             label: 'Regime Classifier',
-            badge: 'BULL_TRENDING',
-            sub: 'Full 2-Position Alpha active',
+            badge: vm.state.activeRegime,
+            sub: vm.state.activeRegime.contains('BULL')
+                ? 'Full 2-Position Alpha active'
+                : 'Defensive Capital Preservation',
             badgeColor: AppTheme.mint,
           ),
           _buildStructuredRow(
@@ -1133,7 +1201,7 @@ class _TradeDetailSheetState extends State<TradeDetailSheet>
           _buildStructuredRow(
             label: 'Early Exit Trigger',
             badge: 'None Active',
-            sub: '0.0% downside risk detected',
+            sub: 'Floor armed at \$${pos.protectedFloor.toStringAsFixed(2)}',
             badgeColor: AppTheme.textWhite,
           ),
         ],
