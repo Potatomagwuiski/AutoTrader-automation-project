@@ -31,9 +31,28 @@ ufw allow 22/tcp >/dev/null 2>&1 || true
 ufw allow 8000/tcp >/dev/null 2>&1 || true
 ufw --force enable >/dev/null 2>&1 || true
 
-# ── 3. Setup Installation Directory ───────────────────────────────────────────
+# ── 3. Fetch / Update Codebase ────────────────────────────────────────────────
+echo -e "${CYAN}📥 Syncing latest AutoTrader engine from GitHub...${NC}"
+REPO_URL="https://github.com/Potatomagwuiski/AutoTrader-automation-project.git"
 mkdir -p "$INSTALL_DIR"
-cd "$INSTALL_DIR"
+
+if [ -d "$INSTALL_DIR/.git" ]; then
+    echo -e "${CYAN}🔄 Updating existing git repository...${NC}"
+    cd "$INSTALL_DIR"
+    git fetch origin main
+    git reset --hard origin/main
+elif [ -f "$INSTALL_DIR/run_server.py" ]; then
+    echo -e "${CYAN}🔄 Updating existing standalone installation...${NC}"
+    TMP_REPO=$(mktemp -d)
+    git clone --depth 1 "$REPO_URL" "$TMP_REPO"
+    rsync -av --exclude='.venv' --exclude='.env' "$TMP_REPO/" "$INSTALL_DIR/" >/dev/null
+    rm -rf "$TMP_REPO"
+    cd "$INSTALL_DIR"
+else
+    echo -e "${CYAN}📥 Cloning AutoTrader repository...${NC}"
+    git clone "$REPO_URL" "$INSTALL_DIR"
+    cd "$INSTALL_DIR"
+fi
 
 # ── 4. Setup Python Virtual Environment ───────────────────────────────────────
 if [ ! -d ".venv" ]; then
