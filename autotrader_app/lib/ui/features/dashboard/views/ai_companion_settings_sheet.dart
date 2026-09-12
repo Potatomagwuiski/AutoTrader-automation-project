@@ -573,11 +573,39 @@ class _AiCompanionSettingsSheetState extends State<AiCompanionSettingsSheet> {
                 keyboardType: TextInputType.url,
                 autocorrect: false,
                 decoration: InputDecoration(
-                  hintText: 'http://165.22.41.58:8000',
+                  hintText: 'http://127.0.0.1:8000 or http://165.22.41.58:8000',
                   hintStyle: GoogleFonts.spaceMono(fontSize: 11, color: AppTheme.textMuted),
                   border: InputBorder.none,
                 ),
               ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                ActionChip(
+                  label: const Text('🖥️ Localhost (127.0.0.1)'),
+                  backgroundColor: AppTheme.charcoalCard,
+                  side: const BorderSide(color: AppTheme.charcoalBorder),
+                  labelStyle: GoogleFonts.inter(fontSize: 10.5, color: AppTheme.textWhite),
+                  onPressed: () {
+                    setState(() {
+                      _serverController.text = 'http://127.0.0.1:8000';
+                    });
+                  },
+                ),
+                ActionChip(
+                  label: const Text('☁️ Cloud VPS (165.22.41.58)'),
+                  backgroundColor: AppTheme.charcoalCard,
+                  side: const BorderSide(color: AppTheme.charcoalBorder),
+                  labelStyle: GoogleFonts.inter(fontSize: 10.5, color: AppTheme.textWhite),
+                  onPressed: () {
+                    setState(() {
+                      _serverController.text = 'http://165.22.41.58:8000';
+                    });
+                  },
+                ),
+              ],
             ),
 
             const SizedBox(height: 10),

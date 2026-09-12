@@ -275,7 +275,7 @@ class _BigTradeCardState extends State<BigTradeCard> {
                     Row(
                       children: [
                         Text(
-                          '+${dollarFormatter.format(pos.unrealizedProfitDollars)}',
+                          '${pos.unrealizedProfitDollars >= 0 ? '+' : '-'}${dollarFormatter.format(pos.unrealizedProfitDollars.abs())}',
                           style: GoogleFonts.spaceMono(
                             fontSize: 11,
                             color: AppTheme.textMuted,

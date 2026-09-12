@@ -78,8 +78,23 @@ class LiveBotService {
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedUrl = prefs.getString(serverPrefKey) ?? defaultGlobalUrl;
-    configureServerUrl(savedUrl);
+    final savedUrl = prefs.getString(serverPrefKey);
+
+    // If local Mac engine is active on 127.0.0.1:8000, prioritize it for simulator/local testing
+    // unless the user explicitly saved a custom remote URL different from the default
+    if (savedUrl == null || savedUrl == defaultGlobalUrl) {
+      final isLocalActive = await _testCandidate('http://127.0.0.1:8000');
+      if (isLocalActive) {
+        if (kDebugMode) {
+          print('[LiveBotService] Auto-connected to local dev engine: http://127.0.0.1:8000');
+        }
+        await _applyDiscoveredUrl('http://127.0.0.1:8000');
+        return;
+      }
+    }
+
+    final activeUrl = savedUrl ?? defaultGlobalUrl;
+    configureServerUrl(activeUrl);
 
     final isAlive = await checkConnection();
     if (!isAlive) {
@@ -144,9 +159,9 @@ class LiveBotService {
 
       // Phase 2: Probe Known Candidates
       final commonCandidates = [
+        'http://127.0.0.1:8000', // iOS Simulator & Localhost (prioritized for local emulator)
         'http://165.22.41.58:8000', // DigitalOcean Cloud VPS (Permanent 24/7)
-        'http://127.0.0.1:8000', // iOS Simulator & Localhost
-        'http://192.168.1.82:8000', // Host Wi-Fi IP
+        'http://192.168.68.112:8000', // Host Wi-Fi IP (local Mac network)
         'http://10.0.2.2:8000', // Android Emulator Host
       ];
 
