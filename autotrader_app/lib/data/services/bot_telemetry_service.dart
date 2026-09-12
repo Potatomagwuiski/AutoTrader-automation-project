@@ -687,6 +687,11 @@ class BotTelemetryService {
     _positionsController.add(_currentPositions);
   }
 
+  void updatePositionsForTest(List<Position> positions) {
+    _currentPositions = List.from(positions);
+    _positionsController.add(_currentPositions);
+  }
+
   final Set<String> _notifiedDecisionKeys = {};
 
   void _forwardDecisionToNotifications(BotDecisionLog d) {

@@ -54,10 +54,15 @@ class DashboardViewModel extends ChangeNotifier {
 
     _stateSub = _telemetryService.stateStream.listen((newState) {
       final regimeChanged = _state.activeRegime != newState.activeRegime;
+      final subsystemsRestored = (!_state.canaryAiActive && newState.canaryAiActive) ||
+          (!_state.executionLoopActive && newState.executionLoopActive);
       _state = newState;
       notifyListeners();
-      // Only regenerate briefing on true macro regime shifts, never on normal micro balance ticks
-      if (regimeChanged) {
+      // Only regenerate briefing on true macro regime shifts or when subsystems are restored
+      if (regimeChanged || subsystemsRestored) {
+        if (_geminiGeneratedBriefing?.contains('Subsystem Alert') == true) {
+          _geminiGeneratedBriefing = null;
+        }
         geminiService?.clearCachedCardResult('Executive Briefing');
         unawaited(_regenerateBriefingIfGeminiAvailable(force: true));
       }
@@ -100,8 +105,12 @@ class DashboardViewModel extends ChangeNotifier {
         );
       }
       notifyListeners();
-      // Only regenerate if connection status transitioned and we don't have a briefing yet
-      if (wasConnected != isConnected && _geminiGeneratedBriefing == null) {
+      // Only regenerate if connection status transitioned and we don't have a briefing yet, or if current briefing is a stale alert
+      if (isConnected && _geminiGeneratedBriefing?.contains('Subsystem Alert') == true) {
+        _geminiGeneratedBriefing = null;
+        geminiService?.clearCachedCardResult('Executive Briefing');
+        unawaited(_regenerateBriefingIfGeminiAvailable(force: true));
+      } else if (wasConnected != isConnected && _geminiGeneratedBriefing == null) {
         unawaited(_regenerateBriefingIfGeminiAvailable());
       }
     });
@@ -450,8 +459,13 @@ class DashboardViewModel extends ChangeNotifier {
           briefing.contains('cash defense');
       final hasActivePositions = _positions.isNotEmpty;
 
-      // Sanity check: If we have active positions, but briefing claims 100% cash defense or doesn't mention active symbol:
-      if (hasActivePositions) {
+      // Sanity check: If briefing claims subsystems are offline, but subsystems are currently online:
+      if (briefing.contains('Subsystem Alert') &&
+          _state.executionLoopActive &&
+          _state.canaryAiActive &&
+          _state.shariahDaemonActive) {
+        _geminiGeneratedBriefing = null;
+      } else if (hasActivePositions) {
         final activeSymbol = _positions.first.symbol;
         if (mentions100Cash || !briefing.contains(activeSymbol)) {
           _geminiGeneratedBriefing = null;
